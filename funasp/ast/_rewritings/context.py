@@ -1,5 +1,6 @@
 from clingo_funasp.ast import RewriteContext as ClingoRewriteContext
 
+from funasp.ast import AUXILIARY_PREFIX
 from funasp.core import Library
 from funasp.util.types import SymbolSignature
 
@@ -34,7 +35,7 @@ class RewriteContext:
         )
         self._aux_counter = 0
 
-    def fresh_predicate_name(self, prefix: str = "RD") -> str:
+    def fresh_predicate_name(self, prefix: str = AUXILIARY_PREFIX) -> str:
         """Return a fresh predicate name not colliding with program predicates."""
         used_names = {signature.name for signature in self.predicates}
         while True:

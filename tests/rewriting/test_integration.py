@@ -755,8 +755,8 @@ class TestRewriteStatements(unittest.TestCase):
             """,
             """
             Ff(1).
-            :- 0 < #count { X: p(X), not RD1 }.
-            RD1 :- q(FUN); Ff(FUN).
+            :- 0 < #count { X: p(X), not AUX1 }.
+            AUX1 :- q(FUN); Ff(FUN).
             :- Ff(_); 1 < #count { V: Ff(V) }.
             """,
         )
@@ -769,10 +769,10 @@ class TestRewriteStatements(unittest.TestCase):
             { p(X) : q(X), not r(X) } :- s(X).
             """,
             """
-            a(X): b(X), not RD1(X) :- d(X).
-            RD1(X) :- c(X).
-            #count { 0,p(X): p(X): q(X), not RD2(X) } :- s(X).
-            RD2(X) :- r(X).
+            a(X): b(X), not AUX1(X) :- d(X).
+            AUX1(X) :- c(X).
+            #count { 0,p(X): p(X): q(X), not AUX2(X) } :- s(X).
+            AUX2(X) :- r(X).
             """,
         )
 
@@ -785,8 +785,8 @@ class TestRewriteStatements(unittest.TestCase):
             """,
             """
             Ff(1).
-            :- q: not RD1.
-            RD1 :- p(FUN); Ff(FUN).
+            :- q: not AUX1.
+            AUX1 :- p(FUN); Ff(FUN).
             :- Ff(_); 1 < #count { V: Ff(V) }.
             """,
         )
@@ -799,11 +799,11 @@ class TestRewriteStatements(unittest.TestCase):
             b(2) :- c(X) : d(X), e(Y), not p(g(X,Y)).
             """,
             """
-            a :- b(X); c(X,Y): d(Y), not RD1(Y).
-            RD1(Y) :- e(5,f(Y)).
-            RD1(Y) :- e(5,f(1*Y+2)).
-            b(2) :- c(X): d(X), e(Y), not RD2(X,Y).
-            RD2(X,Y) :- p(g(X,Y)).
+            a :- b(X); c(X,Y): d(Y), not AUX1(Y).
+            AUX1(Y) :- e(5,f(Y)).
+            AUX1(Y) :- e(5,f(1*Y+2)).
+            b(2) :- c(X): d(X), e(Y), not AUX2(X,Y).
+            AUX2(X,Y) :- p(g(X,Y)).
             """,
         )
 

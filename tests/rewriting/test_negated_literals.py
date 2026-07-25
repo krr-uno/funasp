@@ -103,8 +103,8 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite("a :- b(X); c(X,Y) : d(Y), not e(5,f(Y;Y+2))."),
             [
-                "a :- b(X); c(X,Y): d(Y), not RD1(Y).",
-                "RD1(Y) :- e(5,f(Y;Y+2)).",
+                "a :- b(X); c(X,Y): d(Y), not AUX1(Y).",
+                "AUX1(Y) :- e(5,f(Y;Y+2)).",
             ],
         )
 
@@ -113,8 +113,8 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite("b(2) :- c(X) : d(X), not p(g(X,Y))."),
             [
-                "b(2) :- c(X): d(X), not RD1(X,Y).",
-                "RD1(X,Y) :- p(g(X,Y)).",
+                "b(2) :- c(X): d(X), not AUX1(X,Y).",
+                "AUX1(X,Y) :- p(g(X,Y)).",
             ],
         )
 
@@ -122,40 +122,40 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         """Each lifted literal gets the next auxiliary predicate name."""
         self.assertEqual(
             self._rewrite("a :- b(X) : c(X), not d(X)."),
-            ["a :- b(X): c(X), not RD1(X).", "RD1(X) :- d(X)."],
+            ["a :- b(X): c(X), not AUX1(X).", "AUX1(X) :- d(X)."],
         )
         self.assertEqual(
             self._rewrite("e :- b(X) : c(X), not f(X)."),
-            ["e :- b(X): c(X), not RD2(X).", "RD2(X) :- f(X)."],
+            ["e :- b(X): c(X), not AUX2(X).", "AUX2(X) :- f(X)."],
         )
 
     def test_skips_used_predicate_names(self):
         """Names already used in the program are skipped by the generator."""
-        self.context.predicates.add(SymbolSignature("RD1", 3))
+        self.context.predicates.add(SymbolSignature("AUX1", 3))
         self.assertEqual(
             self._rewrite("a :- b(X) : c(X), not d(X)."),
-            ["a :- b(X): c(X), not RD2(X).", "RD2(X) :- d(X)."],
+            ["a :- b(X): c(X), not AUX2(X).", "AUX2(X) :- d(X)."],
         )
 
     def test_zero_variable_literal(self):
         """A negated literal without variables yields a 0-ary auxiliary."""
         self.assertEqual(
             self._rewrite("q :- r(X) : s(X), not t(5)."),
-            ["q :- r(X): s(X), not RD1.", "RD1 :- t(5)."],
+            ["q :- r(X): s(X), not AUX1.", "AUX1 :- t(5)."],
         )
 
     def test_anonymous_variables_are_projected(self):
         """Anonymous variables do not become auxiliary arguments."""
         self.assertEqual(
             self._rewrite("q :- r(X) : s(X), not t(X,_)."),
-            ["q :- r(X): s(X), not RD1(X).", "RD1(X) :- t(X,_)."],
+            ["q :- r(X): s(X), not AUX1(X).", "AUX1(X) :- t(X,_)."],
         )
 
     def test_lifts_head_conditional_literal(self):
         """A negated literal in a conditional disjunct condition is lifted."""
         self.assertEqual(
             self._rewrite("a(X) : b(X), not c(X) :- d(X)."),
-            ["a(X): b(X), not RD1(X) :- d(X).", "RD1(X) :- c(X)."],
+            ["a(X): b(X), not AUX1(X) :- d(X).", "AUX1(X) :- c(X)."],
         )
 
     def test_lifts_head_conditional_literal_in_disjunction(self):
@@ -163,8 +163,8 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite("p; q(Y) : r(Y,Z), not s(Y,Z) :- t(Y)."),
             [
-                "p; q(Y): r(Y,Z), not RD1(Y,Z) :- t(Y).",
-                "RD1(Y,Z) :- s(Y,Z).",
+                "p; q(Y): r(Y,Z), not AUX1(Y,Z) :- t(Y).",
+                "AUX1(Y,Z) :- s(Y,Z).",
             ],
         )
 
@@ -172,7 +172,7 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         """A negated literal in a choice element condition is lifted."""
         self.assertEqual(
             self._rewrite("{ p(X) : q(X), not r(X) } :- s(X)."),
-            ["{ p(X): q(X), not RD1(X) } :- s(X).", "RD1(X) :- r(X)."],
+            ["{ p(X): q(X), not AUX1(X) } :- s(X).", "AUX1(X) :- r(X)."],
         )
 
     def test_lifts_choice_with_multiple_elements(self):
@@ -180,9 +180,9 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite("1 { a : not b; c(X) : d(X), not e(f(X)) } :- g(X)."),
             [
-                "1 <= { a: not RD1; c(X): d(X), not RD2(X) } :- g(X).",
-                "RD1 :- b.",
-                "RD2(X) :- e(f(X)).",
+                "1 <= { a: not AUX1; c(X): d(X), not AUX2(X) } :- g(X).",
+                "AUX1 :- b.",
+                "AUX2(X) :- e(f(X)).",
             ],
         )
 
@@ -191,8 +191,8 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite("1 <= #count{ X : p(X) : q(X), not r(X) } :- s."),
             [
-                "1 <= #count { X: p(X): q(X), not RD1(X) } :- s.",
-                "RD1(X) :- r(X).",
+                "1 <= #count { X: p(X): q(X), not AUX1(X) } :- s.",
+                "AUX1(X) :- r(X).",
             ],
         )
 
@@ -201,8 +201,8 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite("2 = #sum{ Y,1 : p(Y) : q(Y), not r(Y,Z), t(Z) } :- u."),
             [
-                "2 = #sum { Y,1: p(Y): q(Y), not RD1(Y,Z), t(Z) } :- u.",
-                "RD1(Y,Z) :- r(Y,Z).",
+                "2 = #sum { Y,1: p(Y): q(Y), not AUX1(Y,Z), t(Z) } :- u.",
+                "AUX1(Y,Z) :- r(Y,Z).",
             ],
         )
 
@@ -210,7 +210,7 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         """A negated literal in a body aggregate element condition is lifted."""
         self.assertEqual(
             self._rewrite(":- #count{ X : p(X), not q(X) } > 5."),
-            [" :- #count { X: p(X), not RD1(X) } > 5.", "RD1(X) :- q(X)."],
+            [" :- #count { X: p(X), not AUX1(X) } > 5.", "AUX1(X) :- q(X)."],
         )
 
     def test_lifts_body_aggregate_element_condition_nested_term(self):
@@ -218,8 +218,8 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite("a :- #count{ X : p(X), not q(f(X)) } > 0."),
             [
-                "a :- #count { X: p(X), not RD1(X) } > 0.",
-                "RD1(X) :- q(f(X)).",
+                "a :- #count { X: p(X), not AUX1(X) } > 0.",
+                "AUX1(X) :- q(f(X)).",
             ],
         )
 
@@ -227,7 +227,7 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         """A negated literal in a body set aggregate condition is lifted."""
         self.assertEqual(
             self._rewrite("b :- 1 { p(X) : q(X), not r(X) }."),
-            ["b :- 1 <= { p(X): q(X), not RD1(X) }.", "RD1(X) :- r(X)."],
+            ["b :- 1 <= { p(X): q(X), not AUX1(X) }.", "AUX1(X) :- r(X)."],
         )
 
     def test_lifts_body_set_aggregate_with_multiple_elements(self):
@@ -235,9 +235,9 @@ class TestRewriteNegatedConditionLiterals(unittest.TestCase):
         self.assertEqual(
             self._rewrite(":- { a : not b(Y), c(Y); d : not e } 0."),
             [
-                " :- { a: not RD1(Y), c(Y); d: not RD2 } <= 0.",
-                "RD1(Y) :- b(Y).",
-                "RD2 :- e.",
+                " :- { a: not AUX1(Y), c(Y); d: not AUX2 } <= 0.",
+                "AUX1(Y) :- b(Y).",
+                "AUX2 :- e.",
             ],
         )
 

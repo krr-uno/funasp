@@ -1,4 +1,5 @@
 from ._core import (
+    AUXILIARY_PREFIX,
     PARSER_PREFIX,
     SOME_MARKER,
     Statement,
@@ -12,6 +13,7 @@ from ._rewritings import rewrite_statements
 from ._rewritings.context import RewriteContext
 
 __all__ = [
+    "AUXILIARY_PREFIX",
     "PARSER_PREFIX",
     "SOME_MARKER",
     "Statement",
