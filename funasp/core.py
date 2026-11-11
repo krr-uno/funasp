@@ -34,11 +34,11 @@ class Library:
         self.logger = logger
         self.message_limit = message_limit
         self.library = ClingoLibrary(
-            shared,
-            slotted,
-            log_level,
-            self.handle_log_message,
-            message_limit,
+            shared=shared,
+            slotted=slotted,
+            log_level=log_level,
+            logger=self.handle_log_message,
+            message_limit=message_limit,
         )
         self.original_statements: dict[str, list[ast.Statement]] = {}
         self.ignore_info = False

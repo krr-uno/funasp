@@ -7,7 +7,7 @@ else:
     #     PYTHON_VERSIONS = [f"3.{i}" for i in range(13, 14)]
     nox.options.sessions = "typecheck", "test", "format"
 # nox.options.sessions = "test", "format"
-nox.options.default_venv_backend = None
+nox.options.default_venv_backend = "none"
 
 PROJECT_NAME = "funasp"
 
