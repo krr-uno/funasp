@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "colorama>=0.4.6",
-    "clingo-funasp>=6.0.0.post13",
+    "clingo-funasp>=6.0.0.post22",
     ]
 
 [[project.authors]]

@@ -28,7 +28,9 @@ from funasp.ast import PARSER_PREFIX
 from funasp.ast._rewritings.context import RewriteContext
 
 
-def _rename_term(context: RewriteContext, term: ast.terms.TermFunction) -> ast.terms.TermFunction:
+def _rename_term(
+    context: RewriteContext, term: ast.terms.TermFunction
+) -> ast.terms.TermFunction:
     """Rename a parser-prefixed function term to the configured prefix."""
     assert term.name.startswith(PARSER_PREFIX)
     new_name = context.prefix_function + term.name[len(PARSER_PREFIX) :]
@@ -47,7 +49,9 @@ def _rename_literal(
     return literal.update(context.lib.library, atom=_rename_term(context, atom))
 
 
-def _rename_head(context: RewriteContext, head: ast.head.HeadLiteral) -> ast.head.HeadLiteral:
+def _rename_head(
+    context: RewriteContext, head: ast.head.HeadLiteral
+) -> ast.head.HeadLiteral:
     """Rename parser-prefixed atoms in a rule head."""
     library = context.lib.library
     if isinstance(head, ast.head.HeadSimpleLiteral):
@@ -82,7 +86,9 @@ def _rename_head(context: RewriteContext, head: ast.head.HeadLiteral) -> ast.hea
     return head
 
 
-def rename_prefixes(context: RewriteContext, statement: ast.statements.Statement) -> ast.statements.Statement:
+def rename_prefixes(
+    context: RewriteContext, statement: ast.statements.Statement
+) -> ast.statements.Statement:
     """
     Rename parser-generated ``F``/``FS`` prefixes to the configured prefix.
 
@@ -93,9 +99,9 @@ def rename_prefixes(context: RewriteContext, statement: ast.statements.Statement
     library = context.lib.library
     if isinstance(statement, ast.statements.StatementRule):
         return statement.update(library, head=_rename_head(context, statement.head))
-    if isinstance(statement, ast.statements.StatementShowSignature) and statement.name.startswith(
-        PARSER_PREFIX
-    ):
+    if isinstance(
+        statement, ast.statements.StatementShowSignature
+    ) and statement.name.startswith(PARSER_PREFIX):
         new_name = context.prefix_function + statement.name[len(PARSER_PREFIX) :]
         return statement.update(library, name=new_name)
     return statement

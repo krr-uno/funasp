@@ -87,7 +87,9 @@ def _rewrite_some_pool_entry(
             name,
             [ast.terms.ArgumentTuple(library, [*arguments, value])],
         )
-        literal = ast.literals.LiteralSymbolic(library, head.location, ast.literals.Sign.NoSign, atom)
+        literal = ast.literals.LiteralSymbolic(
+            library, head.location, ast.literals.Sign.NoSign, atom
+        )
         choice_elements.append(
             ast.aggregates.SetAggregateElement(
                 library, element.location, literal, list(element.condition)

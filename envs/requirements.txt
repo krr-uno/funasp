@@ -9,7 +9,7 @@ pyflakes>=3.4.0
 pylint>=3.3.7
 colorama>=0.4.6
 types-colorama>=0.4.15.20250801
-clingo-funasp>=6.0.0.post13
+clingo-funasp>=6.0.0.post22
 
 
 

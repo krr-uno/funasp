@@ -152,7 +152,9 @@ def _condition_to_str(condition: Sequence[ast.literals.Literal]) -> str:
 
 
 def _guards_to_str(
-    left: ast.literals.LeftGuard | None, inner: str, right: ast.literals.RightGuard | None
+    left: ast.literals.LeftGuard | None,
+    inner: str,
+    right: ast.literals.RightGuard | None,
 ) -> str:
     """Render a guarded aggregate given the rendered inner part."""
     parts: list[str] = []

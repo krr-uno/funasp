@@ -27,7 +27,10 @@ def _restore_literal(
     atom = node.atom
     if isinstance(atom, ast.terms.TermFunction):
         prefixed_name = atom.name
-    elif isinstance(atom, ast.terms.TermSymbolic) and atom.symbol.type == SymbolType.Function:
+    elif (
+        isinstance(atom, ast.terms.TermSymbolic)
+        and atom.symbol.type == SymbolType.Function
+    ):
         prefixed_name = atom.symbol.name
     else:
         # TODO: Need to add test for this
@@ -57,7 +60,9 @@ def _restore_literal(
     right_arg = (
         arguments[-1]
         if isinstance(arguments[-1], ast.terms.Term)
-        else ast.terms.TermVariable(context.lib.library, node.location, "_", anonymous=True)
+        else ast.terms.TermVariable(
+            context.lib.library, node.location, "_", anonymous=True
+        )
     )
     right = ast.literals.RightGuard(
         context.lib.library,
@@ -87,19 +92,25 @@ class _RestoreNonIntensionalFunctionsTransformer:
         return node.transform(self.library, self.dispatch)
 
     @dispatch.register
-    def _(self, node: ast.literals.LiteralSymbolic) -> ast.literals.LiteralComparison | None:
+    def _(
+        self, node: ast.literals.LiteralSymbolic
+    ) -> ast.literals.LiteralComparison | None:
         """Restore a prefixed literal when it maps to a non-intensional function."""
         return _restore_literal(self.context, node)
 
     @dispatch.register
-    def _(self, node: ast.statements.StatementRule) -> ast.statements.StatementRule | None:
+    def _(
+        self, node: ast.statements.StatementRule
+    ) -> ast.statements.StatementRule | None:
         """Restore prefixed literals in both rule heads and bodies."""
         rewritten_head = self.dispatch(node.head)
         if rewritten_head is None:
             new_head = node.head
             head_changed = False
         else:
-            assert isinstance(rewritten_head, (ast.head.HeadLiteral, ast.head.HeadDisjunction))
+            assert isinstance(
+                rewritten_head, (ast.head.HeadLiteral, ast.head.HeadDisjunction)
+            )
             new_head = rewritten_head
             head_changed = True
 
@@ -116,7 +127,9 @@ class _RestoreNonIntensionalFunctionsTransformer:
 
         if not changed:
             return None
-        return ast.statements.StatementRule(self.library, node.location, new_head, new_body)
+        return ast.statements.StatementRule(
+            self.library, node.location, new_head, new_body
+        )
 
     def rewrite(self, statement: ast.statements.Statement) -> ast.statements.Statement:
         """Apply restoration to one clingo statement."""

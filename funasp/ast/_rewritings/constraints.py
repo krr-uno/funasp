@@ -41,7 +41,8 @@ def _functional_constraint(
         args2 = [return_variable]
     else:
         args1 = [
-            ast.terms.TermVariable(library, location, f"X{i}") for i in range(function.arity)
+            ast.terms.TermVariable(library, location, f"X{i}")
+            for i in range(function.arity)
         ]
         args2 = list(args1)
         args1.append(anonymous_variable)
@@ -72,7 +73,8 @@ def _functional_constraint(
         None,
     )
     head = ast.head.HeadSimpleLiteral(
-        library, ast.literals.LiteralBoolean(library, location, ast.literals.Sign.NoSign, False)
+        library,
+        ast.literals.LiteralBoolean(library, location, ast.literals.Sign.NoSign, False),
     )
     return ast.statements.StatementRule(library, location, head, [lit1, agg])
 

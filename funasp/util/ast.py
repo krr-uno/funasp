@@ -115,7 +115,9 @@ AST = (
 #     ast.theory.UnparsedElement,
 # )
 
-FunctionLikeAST = ast.terms.TermFunction | ast.terms.TermSymbolic | ast.terms.TermTuple | Symbol
+FunctionLikeAST = (
+    ast.terms.TermFunction | ast.terms.TermSymbolic | ast.terms.TermTuple | Symbol
+)
 
 
 class SyntacticError(NamedTuple):
@@ -266,7 +268,8 @@ def create_body_literal(
 def is_function(node: AST) -> TypeIs[ast.terms.TermFunction | ast.terms.TermSymbolic]:
     """Return whether the given AST node represents a function term."""
     return isinstance(node, ast.terms.TermFunction) or (
-        isinstance(node, ast.terms.TermSymbolic) and node.symbol.type == SymbolType.Function
+        isinstance(node, ast.terms.TermSymbolic)
+        and node.symbol.type == SymbolType.Function
     )
 
 
@@ -452,7 +455,9 @@ class TermTransformer[T2: ast.terms.TermOrProjection, **P]:
                 new = ast.terms.TermSymbolic(self.library, location, new)
             new_arguments2.append(new)
         arguments_tuple = ast.terms.ArgumentTuple(self.library, new_arguments2)
-        return ast.terms.TermFunction(self.library, location, symbol.name, [arguments_tuple])
+        return ast.terms.TermFunction(
+            self.library, location, symbol.name, [arguments_tuple]
+        )
 
     @singledispatchmethod
     def _apply(
@@ -523,7 +528,11 @@ def make_equation(
     return ast.literals.LiteralComparison(
         library,
         loc,
-        ast.literals.Sign.Double if sign == ast.literals.Sign.Double else ast.literals.Sign.NoSign,
+        (
+            ast.literals.Sign.Double
+            if sign == ast.literals.Sign.Double
+            else ast.literals.Sign.NoSign
+        ),
         left,
         [ast.literals.RightGuard(library, ast.literals.Relation.Equal, right)],
     )

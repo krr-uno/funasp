@@ -50,6 +50,28 @@ class TestUnnestStatement(unittest.TestCase):
             ["p(X) :- q(X); not r(X)."],
         )
 
+    def test_unchanged_statements_are_identical(self):
+        """Statements without intensional functions are returned as is."""
+        context = RewriteContext(
+            self.lib, "F", intensional_functions={SymbolSignature("f", 1)}
+        )
+        statements = parse_string(
+            self.lib,
+            """
+            p(X) :- q(X).
+            a :- #sum { X: q(X) } > 2.
+            #sum { X: q(X) } > 2 :- a.
+            { r(X): q(X) } :- a.
+            #minimize { X: q(X) }.
+            :~ q(X). [X]
+            """,
+        )
+        for statement in statements[1:]:
+            with self.subTest(statement=str(statement.original)):
+                self.assertIs(
+                    unnest_statement(context, statement.original), statement.original
+                )
+
     def test_symbolic_function(self):
         """An intensional function nested in a symbolic term is unnested.
 

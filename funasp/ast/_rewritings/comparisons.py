@@ -80,7 +80,9 @@ class ComparisonTransformer:
         return node.transform(self.library, self._dispatch)
 
     @_dispatch.register
-    def _(self, node: ast.literals.LiteralComparison) -> ast.literals.LiteralSymbolic | None:
+    def _(
+        self, node: ast.literals.LiteralComparison
+    ) -> ast.literals.LiteralSymbolic | None:
         """Rewrite functional equalities in literals into prefixed predicate literals."""
         assert len(node.right) >= 1, "Comparison must have at least one guard."
         if (

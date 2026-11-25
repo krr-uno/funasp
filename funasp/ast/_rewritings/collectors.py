@@ -57,7 +57,9 @@ class _VariableCollector:
         node.visit(self._collect_vars)
 
 
-def _signatures_from_literal(prefix: str, literal: ast.literals.Literal) -> set[SymbolSignature]:
+def _signatures_from_literal(
+    prefix: str, literal: ast.literals.Literal
+) -> set[SymbolSignature]:
     """Collect the signature declared by a prefixed head atom, if any."""
     if not isinstance(literal, ast.literals.LiteralSymbolic):
         return set()

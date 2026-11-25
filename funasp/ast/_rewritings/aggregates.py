@@ -61,7 +61,9 @@ def rewrite_assignment_aggregates(
     )
     new_head = ast.head.HeadSimpleLiteral(
         library,
-        ast.literals.LiteralSymbolic(library, head.location, ast.literals.Sign.NoSign, atom),
+        ast.literals.LiteralSymbolic(
+            library, head.location, ast.literals.Sign.NoSign, atom
+        ),
     )
 
     # The parser fills the literal slot of the elements with a placeholder;

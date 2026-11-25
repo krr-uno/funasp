@@ -55,7 +55,11 @@ AST_T = TypeVar(
 
 
 def unnest_functions[
-    T: (ast.literals.LiteralBoolean | ast.literals.LiteralComparison | ast.literals.LiteralSymbolic)
+    T: (
+        ast.literals.LiteralBoolean
+        | ast.literals.LiteralComparison
+        | ast.literals.LiteralSymbolic
+    )
 ](
     lib: Library,
     node: T,
@@ -176,7 +180,10 @@ class UnnestFunctionsInLiteralsTransformer:
         outer_left = False
         is_new_node = False
         # Special case: equality with a single right guard
-        if len(node.right) == 1 and node.right[0].relation == ast.literals.Relation.Equal:
+        if (
+            len(node.right) == 1
+            and node.right[0].relation == ast.literals.Relation.Equal
+        ):
             # Flip if intensional only on right-hand side
             if not self._is_intensional_term(node.left) and self._is_intensional_term(
                 node.right[0].term
@@ -217,7 +224,10 @@ class UnnestFunctionsInLiteralsTransformer:
             if outer and depth <= 0:
                 return False
             if self._is_intensional_term(term):
-                if not self.allowed_in_negated_literals and sign == ast.literals.Sign.Single:
+                if (
+                    not self.allowed_in_negated_literals
+                    and sign == ast.literals.Sign.Single
+                ):
                     raise RuntimeError(
                         f"Intensional functions are not allowed in negated literals in conditions of aggregates and conditional literals. Found '{str(node)}' at {node.location}."
                     )
@@ -235,7 +245,10 @@ class UnnestFunctionsInLiteralsTransformer:
 
     @unnest.register
     def _(
-        self, node: ast.statements.OptimizeTuple, outer: bool = True, sign: ast.literals.Sign | None = None
+        self,
+        node: ast.statements.OptimizeTuple,
+        outer: bool = True,
+        sign: ast.literals.Sign | None = None,
     ) -> ast.statements.OptimizeTuple | None:
         """Unnest intensional functions that occur inside optimize tuples."""
         return node.transform(self.lib, self.unnest, outer=False, sign=sign)

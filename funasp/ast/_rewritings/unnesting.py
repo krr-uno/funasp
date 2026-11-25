@@ -41,7 +41,9 @@ class StatementUnnestTransformer:
         self.lib = lib
         self.intensional_functions = intensional_functions
 
-    def transform_statement(self, node: ast.statements.Statement) -> ast.statements.Statement:
+    def transform_statement(
+        self, node: ast.statements.Statement
+    ) -> ast.statements.Statement:
         """
         Entrypoint for rewriting an entire statement.
         """
@@ -91,7 +93,9 @@ class StatementUnnestTransformer:
 
             assert isinstance(
                 literal,
-                ast.literals.LiteralBoolean | ast.literals.LiteralComparison | ast.literals.LiteralSymbolic,
+                ast.literals.LiteralBoolean
+                | ast.literals.LiteralComparison
+                | ast.literals.LiteralSymbolic,
             )
             false_lit = ast.literals.LiteralBoolean(
                 self.lib, literal.location, ast.literals.Sign.NoSign, False
@@ -154,12 +158,11 @@ class StatementUnnestTransformer:
         self,
         node: A,
         var_gen: FreshVariableGenerator,
-    ) -> A:
+    ) -> A | None:
         """Rewrite aggregate nodes by unnesting their elements and guards."""
-        new_elements = []
-        for elem in node.elements:
-            new_elem = self._rewrite_literal(elem, var_gen)
-            new_elements.append(new_elem if new_elem is not None else elem)
+        new_elements = map_none(
+            lambda elem: self._rewrite_literal(elem, var_gen), node.elements
+        )
 
         new_left = (
             self.body_literal_transformer.unnest(node.left, outer=False)
@@ -172,11 +175,13 @@ class StatementUnnestTransformer:
             else None
         )
 
+        if new_elements is None and new_left is None and new_right is None:
+            return None
         return node.update(
             self.lib,
             left=new_left if new_left is not None else node.left,
             right=new_right if new_right is not None else node.right,
-            elements=new_elements,
+            elements=new_elements if new_elements is not None else node.elements,
         )
 
     @_rewrite_literal.register
@@ -184,7 +189,7 @@ class StatementUnnestTransformer:
         self,
         node: ast.body.BodyAggregateElement | ast.head.HeadAggregateElement,
         var_gen: FreshVariableGenerator,
-    ) -> ast.body.BodyAggregateElement | ast.head.HeadAggregateElement:
+    ) -> ast.body.BodyAggregateElement | ast.head.HeadAggregateElement | None:
         """Rewrite aggregate elements by unnesting tuples, conditions, and literals."""
         transformer = UnnestFunctionsInLiteralsTransformer(
             self.lib,
@@ -209,14 +214,14 @@ class StatementUnnestTransformer:
             condition = condition or list(node.condition)
             condition.extend(extra)
             update["condition"] = condition
-        return node.update(self.lib, **update)
+        return node.update(self.lib, **update) if update else None
 
     @_rewrite_literal.register
     def _(
         self,
         node: ast.aggregates.SetAggregateElement,
         var_gen: FreshVariableGenerator,
-    ) -> ast.aggregates.SetAggregateElement:
+    ) -> ast.aggregates.SetAggregateElement | None:
         """Rewrite a set aggregate element by unnesting its literal and condition."""
         transformer = UnnestFunctionsInLiteralsTransformer(
             self.lib,
@@ -236,14 +241,14 @@ class StatementUnnestTransformer:
             condition = condition or list(node.condition)
             condition.extend(extra)
             update["condition"] = condition
-        return node.update(self.lib, **update)
+        return node.update(self.lib, **update) if update else None
 
     @_rewrite_literal.register
     def _(
         self,
         node: ast.statements.OptimizeElement,
         var_gen: FreshVariableGenerator,
-    ) -> ast.statements.OptimizeElement:
+    ) -> ast.statements.OptimizeElement | None:
         """Rewrite an optimize element and append any generated comparisons to its condition."""
         transformer = UnnestFunctionsInLiteralsTransformer(
             self.lib,
@@ -263,18 +268,19 @@ class StatementUnnestTransformer:
             condition = condition or list(node.condition)
             condition.extend(extra)
             update["condition"] = condition
-        return node.update(self.lib, **update)
+        return node.update(self.lib, **update) if update else None
 
     @_rewrite_literal.register
     def _(
         self, node: ast.head.HeadSimpleLiteral, var_gen: FreshVariableGenerator
     ) -> ast.head.HeadSimpleLiteral | None:
         """Rewrite a simple head literal by unnesting intensional functions within it."""
-        result = self.head_literal_transformer.unnest(node)
-        return result if result is not None else node
+        return self.head_literal_transformer.unnest(node)
 
     @singledispatchmethod
-    def _rewrite(self, node: ast.statements.Statement, _: FreshVariableGenerator) -> ast.statements.Statement:
+    def _rewrite(
+        self, node: ast.statements.Statement, _: FreshVariableGenerator
+    ) -> ast.statements.Statement:
         """Default: return node unchanged."""
         return node
 
@@ -297,7 +303,7 @@ class StatementUnnestTransformer:
                 new_body_literals.append(new_lit)
                 are_new_body_literals = True
 
-        if not new_head and not are_new_body_literals:
+        if new_head is None and not are_new_body_literals:
             return node
 
         for comp in self.head_literal_transformer.pop_all_unnested_functions():
@@ -307,7 +313,7 @@ class StatementUnnestTransformer:
             new_body_literals.append(ast.body.BodySimpleLiteral(self.lib, literal=comp))
 
         update = {}
-        if new_head:
+        if new_head is not None:
             update["head"] = new_head
         if new_body_literals:
             update["body"] = new_body_literals
@@ -318,19 +324,18 @@ class StatementUnnestTransformer:
         self, node: ast.statements.StatementOptimize, var_gen: FreshVariableGenerator
     ) -> ast.statements.StatementOptimize:
         """Rewrite all optimize elements in an optimize statement."""
-        new_elements = []
-        for elem in node.elements:
-            new_elem = self._rewrite_literal(elem, var_gen)
-            new_elements.append(new_elem if new_elem is not None else elem)
-
-        return node.update(
-            self.lib,
-            elements=new_elements,
+        new_elements = map_none(
+            lambda elem: self._rewrite_literal(elem, var_gen), node.elements
         )
+        if new_elements is None:
+            return node
+        return node.update(self.lib, elements=new_elements)
 
     @_rewrite.register
     def _(
-        self, node: ast.statements.StatementWeakConstraint, var_gen: FreshVariableGenerator
+        self,
+        node: ast.statements.StatementWeakConstraint,
+        var_gen: FreshVariableGenerator,
     ) -> ast.statements.StatementWeakConstraint:
         """Rewrite a weak constraint by unnesting its tuple and body literals."""
         transformer = UnnestFunctionsInLiteralsTransformer(
@@ -363,6 +368,9 @@ class StatementUnnestTransformer:
         else:
             new_body_literals_from_comps.extend(node.body)
         comps_2 = transformer.pop_all_unnested_functions()
+
+        if not update and not are_new_body_literals:
+            return node
 
         if comps_1:
             new_body_literals_from_comps.extend(
