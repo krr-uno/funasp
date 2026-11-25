@@ -136,17 +136,30 @@ class StatementUnnestTransformer:
         return node.update(self.lib, **update) if update else None
 
     # Aggregates
-    @_rewrite_literal.register
-    def _(
+    #
+    # The constrained type parameter makes mypy check the body once per
+    # aggregate type, so it knows that, e.g., a ``HeadAggregate`` gets
+    # ``HeadAggregateElement``s back. singledispatch cannot dispatch on a type
+    # parameter, so the classes are registered explicitly.
+    @_rewrite_literal.register(ast.body.BodyAggregate)
+    @_rewrite_literal.register(ast.head.HeadAggregate)
+    @_rewrite_literal.register(ast.head.HeadSetAggregate)
+    def _[
+        A: (
+            ast.body.BodyAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadSetAggregate,
+        )
+    ](
         self,
-        node: ast.body.BodyAggregate | ast.head.HeadAggregate | ast.head.HeadSetAggregate,
+        node: A,
         var_gen: FreshVariableGenerator,
-    ) -> ast.body.BodyAggregate | ast.head.HeadAggregate | ast.head.HeadSetAggregate:
+    ) -> A:
         """Rewrite aggregate nodes by unnesting their elements and guards."""
         new_elements = []
         for elem in node.elements:
             new_elem = self._rewrite_literal(elem, var_gen)
-            new_elements.append(new_elem)
+            new_elements.append(new_elem if new_elem is not None else elem)
 
         new_left = (
             self.body_literal_transformer.unnest(node.left, outer=False)
@@ -308,7 +321,7 @@ class StatementUnnestTransformer:
         new_elements = []
         for elem in node.elements:
             new_elem = self._rewrite_literal(elem, var_gen)
-            new_elements.append(new_elem)
+            new_elements.append(new_elem if new_elem is not None else elem)
 
         return node.update(
             self.lib,
