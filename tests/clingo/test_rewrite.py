@@ -37,7 +37,7 @@ class TestRewrite(unittest.TestCase):
                 zip(statements[1:], prerewrite_expected_head_types)
             ):
                 self.assertIsInstance(
-                    statement, ast.StatementRule, f"Statement {i} is not a rule"
+                    statement, ast.statements.StatementRule, f"Statement {i} is not a rule"
                 )
                 self.assertIsInstance(
                     statement.head,
@@ -60,7 +60,7 @@ class TestRewrite(unittest.TestCase):
                 statements[1:], expected_head_types
             ):
                 self.assertIsInstance(
-                    statement, ast.StatementRule, f"Statement {i} is not a rule"
+                    statement, ast.statements.StatementRule, f"Statement {i} is not a rule"
                 )
                 self.assertIsInstance(
                     statement.head,
@@ -104,20 +104,20 @@ class TestRewrite(unittest.TestCase):
         #sum { X,Y: p(X,Y): r(X,Y) } :- q(X,Y).
         """
         prerewrite_expected_head_types = [
-            ast.HeadSetAggregate,
-            ast.HeadSetAggregate,
-            ast.HeadAggregate,
-            ast.HeadAggregate,
-            ast.HeadAggregate,
-            ast.HeadAggregate,
+            ast.head.HeadSetAggregate,
+            ast.head.HeadSetAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
         ]
         expected_head_types = [
-            ast.HeadAggregate,
-            ast.HeadAggregate,
-            ast.HeadAggregate,
-            ast.HeadAggregate,
-            ast.HeadAggregate,
-            ast.HeadAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
+            ast.head.HeadAggregate,
         ]
         self.maxDiff = None
         self.assertEqualRewritten(
@@ -133,7 +133,7 @@ class TestRewrite(unittest.TestCase):
         library = Library(logger=lambda t, msg: errors.append((t, msg)))
         rewrite_context = ast.RewriteContext(library)
         statement = ast.parse_statement(library, program)
-        self.assertIsInstance(statement, ast.StatementRule)
+        self.assertIsInstance(statement, ast.statements.StatementRule)
         self.assertEqual(str(statement), "a(X) :- b.")
         with self.assertRaises(Exception):
             result = ast.rewrite_statement(rewrite_context, statement)
@@ -159,7 +159,7 @@ class TestRewrite(unittest.TestCase):
         p(Y) :- b(X); 5*Y+7=X*X.
         """
         statement = ast.parse_statement(library, program)
-        self.assertIsInstance(statement, ast.StatementRule)
+        self.assertIsInstance(statement, ast.statements.StatementRule)
         self.assertEqual(str(statement).strip(), "p(Y) :- b(X); 5*Y+7=X*X.")
         result = ast.rewrite_statement(rewrite_context, statement)
         self.assertEqual(str(result[0]).strip(), "p(Y) :- b(X); 5*Y+7=X*X.")
@@ -167,7 +167,7 @@ class TestRewrite(unittest.TestCase):
         p(Y) :- b(X); 0*Y+7=X*X.
         """
         statement = ast.parse_statement(library, program)
-        self.assertIsInstance(statement, ast.StatementRule)
+        self.assertIsInstance(statement, ast.statements.StatementRule)
         self.assertEqual(str(statement).strip(), "p(Y) :- b(X); 0*Y+7=X*X.")
         self.assertEqual(len(errors), 0)
         with self.assertRaises(Exception):

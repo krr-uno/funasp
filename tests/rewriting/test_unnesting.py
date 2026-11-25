@@ -61,7 +61,7 @@ class TestUnnestStatement(unittest.TestCase):
         location = Location(position, position)
         inner = symbol.Function(library, "f", [symbol.Number(library, 1)])
         outer = symbol.Function(library, "g", [inner, symbol.Number(library, 2)])
-        term = ast.TermSymbolic(library, location, outer)
+        term = ast.terms.TermSymbolic(library, location, outer)
         transformer = UnnestFunctionsInLiteralsTransformer(
             library, {SymbolSignature("f", 1)}, FreshVariableGenerator()
         )
@@ -85,7 +85,7 @@ class TestUnnestStatement(unittest.TestCase):
         inner = symbol.Function(library, "f", [symbol.Number(library, 1)])
         middle = symbol.Function(library, "f", [inner])
         outer = symbol.Function(library, "g", [middle, symbol.Number(library, 2)])
-        term = ast.TermSymbolic(library, location, outer)
+        term = ast.terms.TermSymbolic(library, location, outer)
         transformer = UnnestFunctionsInLiteralsTransformer(
             library, {SymbolSignature("f", 1)}, FreshVariableGenerator()
         )

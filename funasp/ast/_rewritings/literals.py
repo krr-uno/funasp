@@ -24,38 +24,38 @@ from funasp.util.iterables import map_none
 
 AST_T = TypeVar(
     "AST_T",
-    ast.ArgumentTuple,
-    ast.BodyAggregate,
-    ast.BodyAggregateElement,
-    ast.BodyConditionalLiteral,
-    ast.BodySetAggregate,
-    ast.BodySimpleLiteral,
-    ast.HeadAggregate,
-    ast.HeadAggregateElement,
-    ast.HeadConditionalLiteral,
-    ast.HeadDisjunction,
-    ast.HeadSetAggregate,
-    ast.HeadSimpleLiteral,
-    ast.LeftGuard,
-    ast.LiteralBoolean,
-    ast.LiteralComparison,
-    ast.LiteralSymbolic,
-    ast.OptimizeElement,
-    ast.OptimizeTuple,
-    ast.RightGuard,
-    ast.SetAggregateElement,
-    ast.TermAbsolute,
-    ast.TermBinaryOperation,
-    ast.TermFunction,
-    ast.TermSymbolic,
-    ast.TermTuple,
-    ast.TermUnaryOperation,
-    ast.TermVariable,
+    ast.terms.ArgumentTuple,
+    ast.body.BodyAggregate,
+    ast.body.BodyAggregateElement,
+    ast.body.BodyConditionalLiteral,
+    ast.body.BodySetAggregate,
+    ast.body.BodySimpleLiteral,
+    ast.head.HeadAggregate,
+    ast.head.HeadAggregateElement,
+    ast.head.HeadConditionalLiteral,
+    ast.head.HeadDisjunction,
+    ast.head.HeadSetAggregate,
+    ast.head.HeadSimpleLiteral,
+    ast.literals.LeftGuard,
+    ast.literals.LiteralBoolean,
+    ast.literals.LiteralComparison,
+    ast.literals.LiteralSymbolic,
+    ast.statements.OptimizeElement,
+    ast.statements.OptimizeTuple,
+    ast.literals.RightGuard,
+    ast.aggregates.SetAggregateElement,
+    ast.terms.TermAbsolute,
+    ast.terms.TermBinaryOperation,
+    ast.terms.TermFunction,
+    ast.terms.TermSymbolic,
+    ast.terms.TermTuple,
+    ast.terms.TermUnaryOperation,
+    ast.terms.TermVariable,
 )
 
 
 def unnest_functions[
-    T: (ast.LiteralBoolean | ast.LiteralComparison | ast.LiteralSymbolic)
+    T: (ast.literals.LiteralBoolean | ast.literals.LiteralComparison | ast.literals.LiteralSymbolic)
 ](
     lib: Library,
     node: T,
@@ -63,10 +63,10 @@ def unnest_functions[
     variable_generator: FreshVariableGenerator,
     *,
     outer: bool = True,
-    sign: ast.Sign | None = None,
+    sign: ast.literals.Sign | None = None,
     unnest_left_guard_equality: bool = False,
     allowed_in_negated_literals: bool = True,
-) -> tuple[T | None, List[ast.LiteralComparison]]:
+) -> tuple[T | None, List[ast.literals.LiteralComparison]]:
     """
     Unnest intensional functions in a given rule and return the list of generated comparisons.
     """
@@ -103,11 +103,11 @@ class UnnestFunctionsInLiteralsTransformer:
         self.lib = lib
         self.intensional_functions = intensional_functions
         self.var_gen = variable_generator
-        self.unnested_functions: List[ast.LiteralComparison] = []
+        self.unnested_functions: List[ast.literals.LiteralComparison] = []
         self.unnest_left_guard_equality = unnest_left_guard_equality
         self.allowed_in_negated_literals = allowed_in_negated_literals
 
-    def pop_all_unnested_functions(self) -> List[ast.LiteralComparison]:
+    def pop_all_unnested_functions(self) -> List[ast.literals.LiteralComparison]:
         """Return and clear the comparisons generated during unnesting."""
         unnested = self.unnested_functions
         self.unnested_functions = []
@@ -117,13 +117,13 @@ class UnnestFunctionsInLiteralsTransformer:
         """Return whether the given function signature is intensional."""
         return SymbolSignature(name, arity) in self.intensional_functions
 
-    def _is_intensional_term(self, term: ast.TermOrProjection | Symbol) -> bool:
+    def _is_intensional_term(self, term: ast.terms.TermOrProjection | Symbol) -> bool:
         """Return whether the given term is an intensional function term."""
-        if isinstance(term, ast.TermFunction):
+        if isinstance(term, ast.terms.TermFunction):
             return any(
                 self._is_intensional(term.name, len(p.arguments)) for p in term.pool
             )
-        if isinstance(term, ast.TermSymbolic):
+        if isinstance(term, ast.terms.TermSymbolic):
             term = term.symbol
         if isinstance(term, symbol.Symbol) and term.type == symbol.SymbolType.Function:
             return self._is_intensional(str(term.name), len(term.arguments))
@@ -134,7 +134,7 @@ class UnnestFunctionsInLiteralsTransformer:
         self,
         node: AST_T,
         outer: bool = True,
-        sign: ast.Sign | None = None,
+        sign: ast.literals.Sign | None = None,
     ) -> AST_T | None:
         """
         Unnest intensional functions in the given AST node.
@@ -145,17 +145,17 @@ class UnnestFunctionsInLiteralsTransformer:
     @unnest.register
     def _(
         self,
-        node: ast.LiteralSymbolic,
+        node: ast.literals.LiteralSymbolic,
         outer: bool = True,
-        sign: ast.Sign | None = None,
-    ) -> ast.LiteralSymbolic | None:
+        sign: ast.literals.Sign | None = None,
+    ) -> ast.literals.LiteralSymbolic | None:
         """Unnest intensional functions inside a symbolic literal."""
         return node.transform(self.lib, self.unnest, outer=True, sign=node.sign)
 
     def _flip_equality(
         self,
-        node: ast.LiteralComparison,
-    ) -> ast.LiteralComparison:
+        node: ast.literals.LiteralComparison,
+    ) -> ast.literals.LiteralComparison:
         """
         Flip sides of an equality comparison.
         """
@@ -166,17 +166,17 @@ class UnnestFunctionsInLiteralsTransformer:
     @unnest.register
     def _(
         self,
-        node: ast.LiteralComparison,
+        node: ast.literals.LiteralComparison,
         outer: bool = True,
-        sign: ast.Sign | None = None,
-    ) -> ast.LiteralComparison | None:
+        sign: ast.literals.Sign | None = None,
+    ) -> ast.literals.LiteralComparison | None:
         """
         Normalize comparisons to have intensional functions on the left side of equality only
         """
         outer_left = False
         is_new_node = False
         # Special case: equality with a single right guard
-        if len(node.right) == 1 and node.right[0].relation == ast.Relation.Equal:
+        if len(node.right) == 1 and node.right[0].relation == ast.literals.Relation.Equal:
             # Flip if intensional only on right-hand side
             if not self._is_intensional_term(node.left) and self._is_intensional_term(
                 node.right[0].term
@@ -204,20 +204,20 @@ class UnnestFunctionsInLiteralsTransformer:
     @unnest.register
     def _(
         self,
-        node: ast.TermOrProjection,
+        node: ast.terms.TermOrProjection,
         outer: bool = True,
-        sign: ast.Sign | None = None,
-    ) -> ast.TermOrProjection | None:
+        sign: ast.literals.Sign | None = None,
+    ) -> ast.terms.TermOrProjection | None:
         """Unnest intensional function terms and replace inner calls with fresh variables."""
 
         def _replace_term_condition(
-            term: ast.TermOrProjection | Symbol, depth: int, /
+            term: ast.terms.TermOrProjection | Symbol, depth: int, /
         ) -> bool:
             """Return whether the term should be replaced."""
             if outer and depth <= 0:
                 return False
             if self._is_intensional_term(term):
-                if not self.allowed_in_negated_literals and sign == ast.Sign.Single:
+                if not self.allowed_in_negated_literals and sign == ast.literals.Sign.Single:
                     raise RuntimeError(
                         f"Intensional functions are not allowed in negated literals in conditions of aggregates and conditional literals. Found '{str(node)}' at {node.location}."
                     )
@@ -230,12 +230,12 @@ class UnnestFunctionsInLiteralsTransformer:
             _replace_term_condition,
             self.unnested_functions.append,
             self.var_gen,
-            sign or ast.Sign.NoSign,
+            sign or ast.literals.Sign.NoSign,
         )
 
     @unnest.register
     def _(
-        self, node: ast.OptimizeTuple, outer: bool = True, sign: ast.Sign | None = None
-    ) -> ast.OptimizeTuple | None:
+        self, node: ast.statements.OptimizeTuple, outer: bool = True, sign: ast.literals.Sign | None = None
+    ) -> ast.statements.OptimizeTuple | None:
         """Unnest intensional functions that occur inside optimize tuples."""
         return node.transform(self.lib, self.unnest, outer=False, sign=sign)

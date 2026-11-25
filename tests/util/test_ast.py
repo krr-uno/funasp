@@ -16,9 +16,9 @@ from funasp.ast._rewritings.collectors import collect_variables
 from funasp.util import ast as util_ast
 
 INVALID_ASTTYPES = {
-    ast.HeadSetAggregate,
-    ast.BodyConditionalLiteral,
-    ast.HeadDisjunction,
+    ast.head.HeadSetAggregate,
+    ast.body.BodyConditionalLiteral,
+    ast.head.HeadDisjunction,
 }
 
 LOC = Location(Position(Library(), "<test>", 1, 1), Position(Library(), "<test>", 1, 1))
@@ -27,7 +27,7 @@ LOC = Location(Position(Library(), "<test>", 1, 1), Position(Library(), "<test>"
 def parse_symbolic_term(lib, term_str):
     """Parse a symbolic term from a string."""
     term = parse_term(lib, term_str)
-    return ast.TermSymbolic(lib, LOC, term)
+    return ast.terms.TermSymbolic(lib, LOC, term)
 
 
 class TestSyntacticChecker(unittest.TestCase):
@@ -87,7 +87,7 @@ class TestSyntacticChecker(unittest.TestCase):
                     Position(self.lib, "<string>", 3, 24),
                 ),
                 "unexpected b: c",
-                ast.BodyConditionalLiteral,
+                ast.body.BodyConditionalLiteral,
             ),
             SyntacticError(
                 Location(
@@ -95,7 +95,7 @@ class TestSyntacticChecker(unittest.TestCase):
                     Position(self.lib, "<string>", 4, 20),
                 ),
                 "unexpected a; c",
-                ast.HeadDisjunction,
+                ast.head.HeadDisjunction,
             ),
             SyntacticError(
                 Location(
@@ -103,7 +103,7 @@ class TestSyntacticChecker(unittest.TestCase):
                     Position(self.lib, "<string>", 5, 16),
                 ),
                 "unexpected { b }",
-                ast.HeadSetAggregate,
+                ast.head.HeadSetAggregate,
             ),
         ]
         self.maxDiff = None
@@ -208,7 +208,7 @@ class TestParseString(unittest.TestCase):
         lines = [sl for line in lines if (sl := line.strip())]
         self.assertEqual(list(map(str, statements)), lines)
         for stmt in statements:
-            self.assertIsInstance(stmt, ast.StatementRule)
+            self.assertIsInstance(stmt, ast.statements.StatementRule)
 
     def test_parse_string_correct(self):
         """Test parse string correct."""
@@ -303,11 +303,11 @@ class TestFunctionArguments(unittest.TestCase):
         position = Position(self.lib, "<test>", 1, 1)
         location = Location(position, position)
         terms = [
-            ast.TermVariable(self.lib, location, "X"),
-            ast.TermVariable(self.lib, location, "Y"),
+            ast.terms.TermVariable(self.lib, location, "X"),
+            ast.terms.TermVariable(self.lib, location, "Y"),
         ]
-        tuple_term = ast.TermTuple(
-            self.lib, location, [ast.ArgumentTuple(self.lib, terms)]
+        tuple_term = ast.terms.TermTuple(
+            self.lib, location, [ast.terms.ArgumentTuple(self.lib, terms)]
         )
         name, arguments = util_ast.function_arguments(tuple_term)
         self.assertEqual(name, "")
@@ -346,7 +346,7 @@ class TestTermTransformer(unittest.TestCase):
 
         def function(term, depth, loc, fun):
             # print(f"Visiting term: {term} --- {type(term)} --- {term.type if isinstance(term, Symbol) else 'N/A'}")
-            if isinstance(term, ast.TermFunction):
+            if isinstance(term, ast.terms.TermFunction):
                 names.append(("F" + term.name, depth))
             elif isinstance(term, Symbol) and term.type == SymbolType.Function:
                 names.append(("S" + term.name, depth))
@@ -370,14 +370,14 @@ class TestTermTransformer(unittest.TestCase):
         def function(term, depth, loc, fun):
             # print(f"Visiting term: {term} --- {type(term)} --- {term.type if isinstance(term, Symbol) else 'N/A'}")
             traversed_terms.append(term)
-            if isinstance(term, ast.TermFunction) and term.name == "b":
-                return ast.TermFunction(self.lib, term.location, "x", term.pool)
+            if isinstance(term, ast.terms.TermFunction) and term.name == "b":
+                return ast.terms.TermFunction(self.lib, term.location, "x", term.pool)
             if (
                 isinstance(term, Symbol)
                 and term.type == SymbolType.Function
                 and term.name == "b"
             ):
-                return ast.TermFunction(self.lib, LOC, "x", [])
+                return ast.terms.TermFunction(self.lib, LOC, "x", [])
             return None
 
         self.assertTransformed(
@@ -411,16 +411,16 @@ class TestTermTransformer(unittest.TestCase):
 
         def function(term, depth, loc, fun):
             traversed_terms.append((str(term), depth))
-            if isinstance(term, ast.TermFunction) and term.name == "b":
+            if isinstance(term, ast.terms.TermFunction) and term.name == "b":
                 fun(term, depth + 1)
-                return ast.TermFunction(self.lib, term.location, "x", term.pool)
+                return ast.terms.TermFunction(self.lib, term.location, "x", term.pool)
             if isinstance(term, Symbol):
                 if (term.type == SymbolType.Function and term.name == "b"):
-                    fun(ast.TermSymbolic(self.lib, LOC, term), depth + 1)
-                    return ast.TermFunction(self.lib, LOC, "x", [])
+                    fun(ast.terms.TermSymbolic(self.lib, LOC, term), depth + 1)
+                    return ast.terms.TermFunction(self.lib, LOC, "x", [])
                 if (term.type != SymbolType.Function):
-                    fun(ast.TermSymbolic(self.lib, LOC, term), depth + 1)
-                    return ast.TermFunction(self.lib, LOC, "y", [])
+                    fun(ast.terms.TermSymbolic(self.lib, LOC, term), depth + 1)
+                    return ast.terms.TermFunction(self.lib, LOC, "y", [])
             return None
 
         self.assertTransformed(
@@ -451,7 +451,7 @@ class TestReplaceTerm(unittest.TestCase):
     def assertTransformed(self, term, expected_str, function, expected_comparisons=None):
         """Assert that the term is transformed correctly."""
         comparisons = []
-        transformed_term = util_ast.replace_term(self.lib, term, function, comparisons.append, self.var_gen, ast.Sign.NoSign)
+        transformed_term = util_ast.replace_term(self.lib, term, function, comparisons.append, self.var_gen, ast.literals.Sign.NoSign)
         if expected_str is None:
             self.assertIsNone(transformed_term)
         else:
@@ -462,7 +462,7 @@ class TestReplaceTerm(unittest.TestCase):
 
     def condition1(self, term, depth):
         """Condition to check if the term is a function named 'b'."""
-        return isinstance(term, ast.TermFunction) and term.name == "b"
+        return isinstance(term, ast.terms.TermFunction) and term.name == "b"
 
 
     def test_replace_term(self):
@@ -474,7 +474,7 @@ class TestReplaceTerm(unittest.TestCase):
 
     def condition2(self, term, depth):
         """Condition matching a function named 'b', whether AST or symbolic."""
-        if isinstance(term, ast.TermFunction):
+        if isinstance(term, ast.terms.TermFunction):
             return term.name == "b"
         return (
             isinstance(term, Symbol)

@@ -14,32 +14,32 @@ from funasp.ast._rewritings.context import RewriteContext
 
 
 def _rewrite_body_literal(
-    library: Library, literal: ast.BodyLiteral
-) -> None | ast.BodyConditionalLiteral:
+    library: Library, literal: ast.body.BodyLiteral
+) -> None | ast.body.BodyConditionalLiteral:
     """Rewrite a negated body literal into an equivalent conditional literal when needed."""
     if (
-        not isinstance(literal, ast.BodySimpleLiteral)
-        or isinstance(literal.literal, ast.LiteralBoolean)
-        or literal.literal.sign != ast.Sign.Single
+        not isinstance(literal, ast.body.BodySimpleLiteral)
+        or isinstance(literal.literal, ast.literals.LiteralBoolean)
+        or literal.literal.sign != ast.literals.Sign.Single
     ):
         return None
 
     lit = literal.literal
 
     # Build #false
-    false_lit = ast.LiteralBoolean(library, lit.location, ast.Sign.NoSign, False)
+    false_lit = ast.literals.LiteralBoolean(library, lit.location, ast.literals.Sign.NoSign, False)
 
     # Create conditional literal: #false : r(X)
-    return ast.BodyConditionalLiteral(
-        library, lit.location, false_lit, [lit.update(library, sign=ast.Sign.NoSign)]
+    return ast.body.BodyConditionalLiteral(
+        library, lit.location, false_lit, [lit.update(library, sign=ast.literals.Sign.NoSign)]
     )
 
 
 def rewrite_negated_body_literals(
-    context: RewriteContext, statement: ast.Statement
-) -> ast.Statement:
+    context: RewriteContext, statement: ast.statements.Statement
+) -> ast.statements.Statement:
     """Rewrite eligible negated body literals inside a single statement."""
-    if not isinstance(statement, ast.StatementRule):
+    if not isinstance(statement, ast.statements.StatementRule):
         return statement
     new_body = transform_iterable(
         context.lib.library, statement.body, _rewrite_body_literal

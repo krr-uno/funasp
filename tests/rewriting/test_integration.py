@@ -62,7 +62,7 @@ class TestRewriteStatements(unittest.TestCase):
         transformed_str = "\n".join(
             str(statement).strip()
             for statement in transformed
-            if not isinstance(statement, ast.StatementProgram | ast.StatementComment)
+            if not isinstance(statement, ast.statements.StatementProgram | ast.statements.StatementComment)
         )
         self.assertEqual(transformed_str, expected_program)
 
@@ -719,7 +719,7 @@ class TestRewriteStatements(unittest.TestCase):
         with redirect_stderr(out):
             with self.assertRaisesRegex(
                 RuntimeError,
-                r"\('rewriting failed', \[\(<clingo_funasp\.ast\.StatementRule object at 0x[0-9A-Fa-f]+>, RuntimeError\('rewriting failed'\)\)\]\)",
+                r"\('rewriting failed', \[\(StatementRule\(.*\), RuntimeError\('rewriting failed'\)\)\]\)",
             ):
                 self.assertTransformEqual(
                     """
@@ -743,7 +743,7 @@ class TestRewriteStatements(unittest.TestCase):
         with redirect_stderr(out):
             with self.assertRaisesRegex(
                 RuntimeError,
-                r"\('rewriting failed', \[\(<clingo_funasp\.ast\.StatementRule object at 0x[0-9A-Fa-f]+>, RuntimeError\('rewriting failed'\)\)\]\)",
+                r"\('rewriting failed', \[\(StatementRule\(.*\), RuntimeError\('rewriting failed'\)\)\]\)",
             ):
                 self.assertTransformEqual(
                     """

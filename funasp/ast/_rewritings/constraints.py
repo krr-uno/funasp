@@ -21,7 +21,7 @@ from funasp.util.ast import create_body_literal, create_literal
 
 def _functional_constraint(
     library: Library, function: SymbolSignature, prefix: str = "F"
-) -> ast.StatementRule:
+) -> ast.statements.StatementRule:
     """
     Generate a functional constraint for a single intensional function.
 
@@ -34,52 +34,52 @@ def _functional_constraint(
     """
     position = Position(library, "<functional>", 0, 0)
     location = Location(position, position)
-    anonymous_variable = ast.TermVariable(library, location, "_")
-    return_variable = ast.TermVariable(library, location, "V")
+    anonymous_variable = ast.terms.TermVariable(library, location, "_")
+    return_variable = ast.terms.TermVariable(library, location, "V")
     if function.arity == 0:
         args1 = [anonymous_variable]
         args2 = [return_variable]
     else:
         args1 = [
-            ast.TermVariable(library, location, f"X{i}") for i in range(function.arity)
+            ast.terms.TermVariable(library, location, f"X{i}") for i in range(function.arity)
         ]
         args2 = list(args1)
         args1.append(anonymous_variable)
         args2.append(return_variable)
     name = f"{prefix}{function.name}"
-    args1tuple = ast.ArgumentTuple(library, args1)
-    args2tuple = ast.ArgumentTuple(library, args2)
+    args1tuple = ast.terms.ArgumentTuple(library, args1)
+    args2tuple = ast.terms.ArgumentTuple(library, args2)
     lit1 = create_body_literal(
         library,
-        ast.TermFunction(library, location, name, [args1tuple]),
+        ast.terms.TermFunction(library, location, name, [args1tuple]),
     )
     lit2 = create_literal(
-        library, ast.TermFunction(library, location, name, [args2tuple])
+        library, ast.terms.TermFunction(library, location, name, [args2tuple])
     )
-    agg = ast.BodyAggregate(
+    agg = ast.body.BodyAggregate(
         library,
         location,
-        ast.Sign.NoSign,
-        ast.LeftGuard(
+        ast.literals.Sign.NoSign,
+        ast.literals.LeftGuard(
             library,
-            ast.TermSymbolic(library, location, Number(library, 1)),
-            ast.Relation.Less,
+            ast.terms.TermSymbolic(library, location, Number(library, 1)),
+            ast.literals.Relation.Less,
         ),
-        ast.AggregateFunction.Count,
+        ast.aggregates.AggregateFunction.Count,
         [
-            ast.BodyAggregateElement(library, location, [return_variable], [lit2]),
+            ast.body.BodyAggregateElement(library, location, [return_variable], [lit2]),
         ],
         None,
     )
-    head = ast.HeadSimpleLiteral(
-        library, ast.LiteralBoolean(library, location, ast.Sign.NoSign, False)
+    head = ast.head.HeadSimpleLiteral(
+        library, ast.literals.LiteralBoolean(library, location, ast.literals.Sign.NoSign, False)
     )
-    return ast.StatementRule(library, location, head, [lit1, agg])
+    return ast.statements.StatementRule(library, location, head, [lit1, agg])
 
 
 def functional_constraints(
     context: RewriteContext,
-) -> Iterable[ast.StatementRule]:
+) -> Iterable[ast.statements.StatementRule]:
     """
     Generate functional constraints for intensional functions.
 

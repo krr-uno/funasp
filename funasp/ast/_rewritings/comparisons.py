@@ -41,31 +41,31 @@ class ComparisonTransformer:
 
     def _build_intensional_function_to_term(
         self,
-        assigned_function: ast.TermFunction | ast.TermSymbolic,
-        value: ast.TermOrProjection,
+        assigned_function: ast.terms.TermFunction | ast.terms.TermSymbolic,
+        value: ast.terms.TermOrProjection,
         location: Location,
-    ) -> ast.TermFunction:
+    ) -> ast.terms.TermFunction:
         """Builds a function term given its assigned function and its value."""
-        if isinstance(assigned_function, ast.TermFunction):
+        if isinstance(assigned_function, ast.terms.TermFunction):
             name = assigned_function.name
             pool = [
-                ast.ArgumentTuple(self.library, [*t.arguments, value])
+                ast.terms.ArgumentTuple(self.library, [*t.arguments, value])
                 for t in assigned_function.pool
             ]
         elif assigned_function.symbol.type == SymbolType.Function:
             name = assigned_function.symbol.name
             pool = [
-                ast.ArgumentTuple(
+                ast.terms.ArgumentTuple(
                     self.library,
                     [
-                        ast.TermSymbolic(self.library, location, arg)
+                        ast.terms.TermSymbolic(self.library, location, arg)
                         for arg in assigned_function.symbol.arguments
                     ]
                     + [value],
                 )
             ]
 
-        return ast.TermFunction(
+        return ast.terms.TermFunction(
             self.library,
             location,
             f"{self.prefix}{name}",
@@ -80,17 +80,17 @@ class ComparisonTransformer:
         return node.transform(self.library, self._dispatch)
 
     @_dispatch.register
-    def _(self, node: ast.LiteralComparison) -> ast.LiteralSymbolic | None:
+    def _(self, node: ast.literals.LiteralComparison) -> ast.literals.LiteralSymbolic | None:
         """Rewrite functional equalities in literals into prefixed predicate literals."""
         assert len(node.right) >= 1, "Comparison must have at least one guard."
         if (
             not is_function(node.left)
             or len(node.right) != 1
-            or node.right[0].relation != ast.Relation.Equal
+            or node.right[0].relation != ast.literals.Relation.Equal
         ):
             return None
         name, arguments = function_arguments_ast(self.library, node.left)
-        if isinstance(node.left, ast.TermFunction):
+        if isinstance(node.left, ast.terms.TermFunction):
             candidate_arities = {len(p.arguments) for p in node.left.pool}
         else:
             candidate_arities = {len(arguments)}
@@ -99,7 +99,7 @@ class ComparisonTransformer:
             for arity in candidate_arities
         ):
             return None
-        return ast.LiteralSymbolic(
+        return ast.literals.LiteralSymbolic(
             self.library,
             node.location,
             node.sign,
@@ -108,16 +108,16 @@ class ComparisonTransformer:
             ),
         )
 
-    def rewrite(self, node: ast.Statement) -> ast.Statement:
+    def rewrite(self, node: ast.statements.Statement) -> ast.statements.Statement:
         """Rewrite all intensional functional equalities in a statement."""
         result = self._dispatch(node) or node
-        return cast(ast.Statement, result)
+        return cast(ast.statements.Statement, result)
 
 
 def prefix_comparisons(
     context: RewriteContext,
-    statement: ast.Statement,
-) -> ast.Statement:
+    statement: ast.statements.Statement,
+) -> ast.statements.Statement:
     """Rewrite intensional functional equalities in a single statement."""
     transformer = ComparisonTransformer(
         context.lib.library, context.intensional_functions, context.prefix_function

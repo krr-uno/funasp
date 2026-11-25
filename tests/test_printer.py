@@ -25,7 +25,7 @@ class TestAstToStr(unittest.TestCase):
         statements = [
             statement.original
             for statement in parse_string(self.lib, program)
-            if not isinstance(statement.original, ast.StatementProgram)
+            if not isinstance(statement.original, ast.statements.StatementProgram)
         ]
         self.assertEqual(len(statements), 1)
         self.assertEqual(_ast_to_str(statements[0]), expected)
@@ -86,25 +86,25 @@ class TestAstToStr(unittest.TestCase):
         self.assertRoundTrip("f(1;2) := 3.", "f(1;2) := 3.")
         self.assertRoundTrip("f(a;b) := #some{r; g}.", "f(a;b) := #some{r; g}.")
 
-    def _pooled_atom(self, values: list[int]) -> ast.Statement:
+    def _pooled_atom(self, values: list[int]) -> ast.statements.Statement:
         """Build the statement ``Ff(1,v1;2,v2).`` with a pooled head atom."""
         library = self.lib.library
         position = Position(library, "<test>", 1, 1)
         location = Location(position, position)
 
-        def number(value: int) -> ast.TermSymbolic:
+        def number(value: int) -> ast.terms.TermSymbolic:
             from clingo_funasp.symbol import Number
 
-            return ast.TermSymbolic(library, location, Number(library, value))
+            return ast.terms.TermSymbolic(library, location, Number(library, value))
 
         pool = [
-            ast.ArgumentTuple(library, [number(argument), number(value)])
+            ast.terms.ArgumentTuple(library, [number(argument), number(value)])
             for argument, value in zip((1, 2), values)
         ]
-        atom = ast.TermFunction(library, location, "Ff", pool)
-        literal = ast.LiteralSymbolic(library, location, ast.Sign.NoSign, atom)
-        return ast.StatementRule(
-            library, location, ast.HeadSimpleLiteral(library, literal), []
+        atom = ast.terms.TermFunction(library, location, "Ff", pool)
+        literal = ast.literals.LiteralSymbolic(library, location, ast.literals.Sign.NoSign, atom)
+        return ast.statements.StatementRule(
+            library, location, ast.head.HeadSimpleLiteral(library, literal), []
         )
 
     def test_pooled_assignment(self):

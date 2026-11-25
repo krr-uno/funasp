@@ -11,7 +11,7 @@ class TestParseString:
     def parse_string(self, s):
         statements = []
         ast.parse_string(self.lib, s, lambda x: statements.append(x))
-        if isinstance(statements[0], ast.StatementProgram):
+        if isinstance(statements[0], ast.statements.StatementProgram):
             statements = statements[1:]
         return "\n".join(map(str, statements))
 
@@ -26,7 +26,7 @@ class TestParseString:
 
             statements = []
             ast.parse_files(self.lib, [temp_file.name], lambda x: statements.append(x))
-            if isinstance(statements[0], ast.StatementProgram):
+            if isinstance(statements[0], ast.statements.StatementProgram):
                 statements = statements[1:]
             return "\n".join(map(str, statements))
 

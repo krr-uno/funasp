@@ -28,7 +28,7 @@ from funasp.ast import PARSER_PREFIX
 from funasp.ast._rewritings.context import RewriteContext
 
 
-def _rename_term(context: RewriteContext, term: ast.TermFunction) -> ast.TermFunction:
+def _rename_term(context: RewriteContext, term: ast.terms.TermFunction) -> ast.terms.TermFunction:
     """Rename a parser-prefixed function term to the configured prefix."""
     assert term.name.startswith(PARSER_PREFIX)
     new_name = context.prefix_function + term.name[len(PARSER_PREFIX) :]
@@ -36,44 +36,44 @@ def _rename_term(context: RewriteContext, term: ast.TermFunction) -> ast.TermFun
 
 
 def _rename_literal(
-    context: RewriteContext, literal: ast.LiteralSymbolic
-) -> ast.LiteralSymbolic:
+    context: RewriteContext, literal: ast.literals.LiteralSymbolic
+) -> ast.literals.LiteralSymbolic:
     """Rename the atom of a parser-prefixed symbolic literal."""
     atom = literal.atom
-    if not isinstance(atom, ast.TermFunction) or not atom.name.startswith(
+    if not isinstance(atom, ast.terms.TermFunction) or not atom.name.startswith(
         PARSER_PREFIX
     ):
         return literal
     return literal.update(context.lib.library, atom=_rename_term(context, atom))
 
 
-def _rename_head(context: RewriteContext, head: ast.HeadLiteral) -> ast.HeadLiteral:
+def _rename_head(context: RewriteContext, head: ast.head.HeadLiteral) -> ast.head.HeadLiteral:
     """Rename parser-prefixed atoms in a rule head."""
     library = context.lib.library
-    if isinstance(head, ast.HeadSimpleLiteral):
+    if isinstance(head, ast.head.HeadSimpleLiteral):
         literal = head.literal
-        if not isinstance(literal, ast.LiteralSymbolic):
+        if not isinstance(literal, ast.literals.LiteralSymbolic):
             return head
-        return ast.HeadSimpleLiteral(library, _rename_literal(context, literal))
-    if isinstance(head, ast.HeadSetAggregate):
+        return ast.head.HeadSimpleLiteral(library, _rename_literal(context, literal))
+    if isinstance(head, ast.head.HeadSetAggregate):
         elements = [
             (
                 element.update(
                     library, literal=_rename_literal(context, element.literal)
                 )
-                if isinstance(element.literal, ast.LiteralSymbolic)
+                if isinstance(element.literal, ast.literals.LiteralSymbolic)
                 else element
             )
             for element in head.elements
         ]
         return head.update(library, elements=elements)
-    if isinstance(head, ast.HeadAggregate):
+    if isinstance(head, ast.head.HeadAggregate):
         elements = [
             (
                 element.update(
                     library, literal=_rename_literal(context, element.literal)
                 )
-                if isinstance(element.literal, ast.LiteralSymbolic)
+                if isinstance(element.literal, ast.literals.LiteralSymbolic)
                 else element
             )
             for element in head.elements
@@ -82,7 +82,7 @@ def _rename_head(context: RewriteContext, head: ast.HeadLiteral) -> ast.HeadLite
     return head
 
 
-def rename_prefixes(context: RewriteContext, statement: ast.Statement) -> ast.Statement:
+def rename_prefixes(context: RewriteContext, statement: ast.statements.Statement) -> ast.statements.Statement:
     """
     Rename parser-generated ``F``/``FS`` prefixes to the configured prefix.
 
@@ -91,9 +91,9 @@ def rename_prefixes(context: RewriteContext, statement: ast.Statement) -> ast.St
     if context.prefix_function == PARSER_PREFIX:
         return statement
     library = context.lib.library
-    if isinstance(statement, ast.StatementRule):
+    if isinstance(statement, ast.statements.StatementRule):
         return statement.update(library, head=_rename_head(context, statement.head))
-    if isinstance(statement, ast.StatementShowSignature) and statement.name.startswith(
+    if isinstance(statement, ast.statements.StatementShowSignature) and statement.name.startswith(
         PARSER_PREFIX
     ):
         new_name = context.prefix_function + statement.name[len(PARSER_PREFIX) :]

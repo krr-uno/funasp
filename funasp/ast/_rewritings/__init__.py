@@ -36,8 +36,8 @@ from .unnesting import unnest_statement
 
 
 def clingo_rewrite_wrapper(
-    context: RewriteContext, original: Statement, statement: ast.Statement
-) -> list[ast.Statement]:
+    context: RewriteContext, original: Statement, statement: ast.statements.Statement
+) -> list[ast.statements.Statement]:
     """
     Wrapper for clingo's statement rewriting to handle errors.
     """

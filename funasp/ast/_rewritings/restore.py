@@ -21,13 +21,13 @@ from funasp.util.ast import function_arguments_ast
 
 def _restore_literal(
     context: RewriteContext,
-    node: ast.LiteralSymbolic,
-) -> ast.LiteralComparison | None:
+    node: ast.literals.LiteralSymbolic,
+) -> ast.literals.LiteralComparison | None:
     """Restore prefixed function literals into equalities for non-intensional signatures."""
     atom = node.atom
-    if isinstance(atom, ast.TermFunction):
+    if isinstance(atom, ast.terms.TermFunction):
         prefixed_name = atom.name
-    elif isinstance(atom, ast.TermSymbolic) and atom.symbol.type == SymbolType.Function:
+    elif isinstance(atom, ast.terms.TermSymbolic) and atom.symbol.type == SymbolType.Function:
         prefixed_name = atom.symbol.name
     else:
         # TODO: Need to add test for this
@@ -48,23 +48,23 @@ def _restore_literal(
     if SymbolSignature(base_name, original_arity) in context.intensional_functions:
         return None
 
-    left = ast.TermFunction(
+    left = ast.terms.TermFunction(
         context.lib.library,
         node.location,
         base_name,
-        [ast.ArgumentTuple(context.lib.library, arguments[:-1])],
+        [ast.terms.ArgumentTuple(context.lib.library, arguments[:-1])],
     )
     right_arg = (
         arguments[-1]
-        if isinstance(arguments[-1], ast.Term)
-        else ast.TermVariable(context.lib.library, node.location, "_", anonymous=True)
+        if isinstance(arguments[-1], ast.terms.Term)
+        else ast.terms.TermVariable(context.lib.library, node.location, "_", anonymous=True)
     )
-    right = ast.RightGuard(
+    right = ast.literals.RightGuard(
         context.lib.library,
-        ast.Relation.Equal,
+        ast.literals.Relation.Equal,
         right_arg,
     )
-    return ast.LiteralComparison(
+    return ast.literals.LiteralComparison(
         context.lib.library,
         node.location,
         node.sign,
@@ -87,49 +87,49 @@ class _RestoreNonIntensionalFunctionsTransformer:
         return node.transform(self.library, self.dispatch)
 
     @dispatch.register
-    def _(self, node: ast.LiteralSymbolic) -> ast.LiteralComparison | None:
+    def _(self, node: ast.literals.LiteralSymbolic) -> ast.literals.LiteralComparison | None:
         """Restore a prefixed literal when it maps to a non-intensional function."""
         return _restore_literal(self.context, node)
 
     @dispatch.register
-    def _(self, node: ast.StatementRule) -> ast.StatementRule | None:
+    def _(self, node: ast.statements.StatementRule) -> ast.statements.StatementRule | None:
         """Restore prefixed literals in both rule heads and bodies."""
         rewritten_head = self.dispatch(node.head)
         if rewritten_head is None:
             new_head = node.head
             head_changed = False
         else:
-            assert isinstance(rewritten_head, (ast.HeadLiteral, ast.HeadDisjunction))
+            assert isinstance(rewritten_head, (ast.head.HeadLiteral, ast.head.HeadDisjunction))
             new_head = rewritten_head
             head_changed = True
 
-        new_body: list[ast.BodyLiteral] = []
+        new_body: list[ast.body.BodyLiteral] = []
         changed = head_changed
         for literal in node.body:
             rewritten = self.dispatch(literal)
             if rewritten is None:
                 new_body.append(literal)
             else:
-                assert isinstance(rewritten, ast.BodyLiteral)
+                assert isinstance(rewritten, ast.body.BodyLiteral)
                 new_body.append(rewritten)
                 changed = True
 
         if not changed:
             return None
-        return ast.StatementRule(self.library, node.location, new_head, new_body)
+        return ast.statements.StatementRule(self.library, node.location, new_head, new_body)
 
-    def rewrite(self, statement: ast.Statement) -> ast.Statement:
+    def rewrite(self, statement: ast.statements.Statement) -> ast.statements.Statement:
         """Apply restoration to one clingo statement."""
         rewritten = self.dispatch(statement)
         if rewritten is None:
             return statement
-        assert isinstance(rewritten, ast.Statement)
+        assert isinstance(rewritten, ast.statements.Statement)
         return rewritten
 
 
 def restore_non_intensional_functions(
     context: RewriteContext,
-    statement: ast.Statement,
-) -> ast.Statement:
+    statement: ast.statements.Statement,
+) -> ast.statements.Statement:
     """Restore non-intensional prefixed function literals in a statement."""
     return _RestoreNonIntensionalFunctionsTransformer(context).rewrite(statement)

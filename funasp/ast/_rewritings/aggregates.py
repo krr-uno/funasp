@@ -24,23 +24,23 @@ from funasp.util.ast import FreshVariableGenerator
 
 
 def rewrite_assignment_aggregates(
-    context: RewriteContext, statement: ast.Statement
-) -> ast.Statement:
+    context: RewriteContext, statement: ast.statements.Statement
+) -> ast.statements.Statement:
     """Rewrite an aggregate assignment head into a simple head plus body aggregate."""
     library = context.lib.library
     prefix = PARSER_PREFIX
-    if not isinstance(statement, ast.StatementRule) or not isinstance(
-        head := statement.head, ast.HeadAggregate
+    if not isinstance(statement, ast.statements.StatementRule) or not isinstance(
+        head := statement.head, ast.head.HeadAggregate
     ):
         return statement
     left = head.left
     if (
         left is None
-        or not isinstance(left.term, ast.TermFunction)
+        or not isinstance(left.term, ast.terms.TermFunction)
         or not left.term.name.startswith(prefix)
     ):
         return statement
-    assert left.relation == ast.Relation.Equal
+    assert left.relation == ast.literals.Relation.Equal
     assert head.right is None
 
     name = left.term.name
@@ -53,33 +53,33 @@ def rewrite_assignment_aggregates(
         library, head.location, "W"
     )
 
-    atom = ast.TermFunction(
+    atom = ast.terms.TermFunction(
         library,
         head.location,
         name,
-        [ast.ArgumentTuple(library, [*arguments, fresh_variable])],
+        [ast.terms.ArgumentTuple(library, [*arguments, fresh_variable])],
     )
-    new_head = ast.HeadSimpleLiteral(
+    new_head = ast.head.HeadSimpleLiteral(
         library,
-        ast.LiteralSymbolic(library, head.location, ast.Sign.NoSign, atom),
+        ast.literals.LiteralSymbolic(library, head.location, ast.literals.Sign.NoSign, atom),
     )
 
     # The parser fills the literal slot of the elements with a placeholder;
     # the body aggregate keeps only the tuple and the condition.
     body_elements = [
-        ast.BodyAggregateElement(
+        ast.body.BodyAggregateElement(
             library, element.location, list(element.tuple), list(element.condition)
         )
         for element in head.elements
     ]
-    body_aggregate = ast.BodyAggregate(
+    body_aggregate = ast.body.BodyAggregate(
         library,
         head.location,
-        ast.Sign.NoSign,
-        ast.LeftGuard(library, fresh_variable, ast.Relation.Equal),
+        ast.literals.Sign.NoSign,
+        ast.literals.LeftGuard(library, fresh_variable, ast.literals.Relation.Equal),
         head.function,
         body_elements,
         None,
     )
-    new_body: list[ast.BodyLiteral] = [*statement.body, body_aggregate]
+    new_body: list[ast.body.BodyLiteral] = [*statement.body, body_aggregate]
     return statement.update(library, head=new_head, body=new_body)

@@ -40,7 +40,7 @@ class Library:
             logger=self.handle_log_message,
             message_limit=message_limit,
         )
-        self.original_statements: dict[str, list[ast.Statement]] = {}
+        self.original_statements: dict[str, list[ast.statements.Statement]] = {}
         self.ignore_info = False
         self._processing_statement: str | None = None
 
@@ -52,7 +52,7 @@ class Library:
         """Clear the currently processing statement."""
         self._processing_statement = None
 
-    # def add_original_statement(self, statement: ast.Statement) -> None:
+    # def add_original_statement(self, statement: ast.statements.Statement) -> None:
     #     file = statement.location.begin.file
     #     if file not in self.original_statements:
     #         self.original_statements[file] = []

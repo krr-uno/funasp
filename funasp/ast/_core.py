@@ -32,8 +32,8 @@ PARSER_SOME_PREFIX = PARSER_PREFIX + SOME_MARKER
 
 
 _REWRITE_FUNCTION = (
-    Callable[[ast.Statement], ast.Statement]
-    | Callable[[ast.Statement], list[ast.Statement]]
+    Callable[[ast.statements.Statement], ast.statements.Statement]
+    | Callable[[ast.statements.Statement], list[ast.statements.Statement]]
 )
 
 
@@ -47,10 +47,10 @@ class Statement:
     original around enables better error reporting during rewriting.
     """
 
-    def __init__(self, lib: Library, original: ast.Statement) -> None:
+    def __init__(self, lib: Library, original: ast.statements.Statement) -> None:
         self.lib = lib
         self.original = original
-        self.rewritten: list[ast.Statement] = [original]
+        self.rewritten: list[ast.statements.Statement] = [original]
 
     def __str__(self) -> str:
         return _ast_to_str(self.original)
@@ -61,10 +61,10 @@ class Statement:
 
         The rewriting function can return either a single statement or a list of statements. In the first case, the rewritten list is updated to contain only the returned statement; in the second case, it is updated to contain all returned statements.
         """
-        new_rewritten: list[ast.Statement] = []
+        new_rewritten: list[ast.statements.Statement] = []
         for stmt in self.rewritten:
             result = func(stmt)
-            if isinstance(result, ast.Statement):
+            if isinstance(result, ast.statements.Statement):
                 new_rewritten.append(result)
             else:
                 new_rewritten.extend(result)
@@ -100,20 +100,20 @@ def transform_iterable[T, R](
 
 
 _RELATION_STR = {
-    ast.Relation.Equal: "=",
-    ast.Relation.NotEqual: "!=",
-    ast.Relation.Less: "<",
-    ast.Relation.LessEqual: "<=",
-    ast.Relation.Greater: ">",
-    ast.Relation.GreaterEqual: ">=",
+    ast.literals.Relation.Equal: "=",
+    ast.literals.Relation.NotEqual: "!=",
+    ast.literals.Relation.Less: "<",
+    ast.literals.Relation.LessEqual: "<=",
+    ast.literals.Relation.Greater: ">",
+    ast.literals.Relation.GreaterEqual: ">=",
 }
 
 _AGGREGATE_STR = {
-    ast.AggregateFunction.Count: "#count",
-    ast.AggregateFunction.Sum: "#sum",
-    ast.AggregateFunction.Sump: "#sum+",
-    ast.AggregateFunction.Min: "#min",
-    ast.AggregateFunction.Max: "#max",
+    ast.aggregates.AggregateFunction.Count: "#count",
+    ast.aggregates.AggregateFunction.Sum: "#sum",
+    ast.aggregates.AggregateFunction.Sump: "#sum+",
+    ast.aggregates.AggregateFunction.Min: "#min",
+    ast.aggregates.AggregateFunction.Max: "#max",
 }
 
 
@@ -124,9 +124,9 @@ def _function_to_str(name: str, arguments_strings: list[str]) -> str:
     return f"{name}({';'.join(arguments_strings)})"
 
 
-def _assignment_atom_to_str(atom: ast.Term) -> str | None:
+def _assignment_atom_to_str(atom: ast.terms.Term) -> str | None:
     """Render a parser-generated ``Ff(t…,v)`` atom as ``f(t…) := v``."""
-    if not isinstance(atom, ast.TermFunction) or not atom.name.startswith(
+    if not isinstance(atom, ast.terms.TermFunction) or not atom.name.startswith(
         PARSER_PREFIX
     ):
         return None
@@ -144,7 +144,7 @@ def _assignment_atom_to_str(atom: ast.Term) -> str | None:
     return f"{_function_to_str(name, arguments_strings)} := {values[0]}"
 
 
-def _condition_to_str(condition: Sequence[ast.Literal]) -> str:
+def _condition_to_str(condition: Sequence[ast.literals.Literal]) -> str:
     """Render an element condition, with a leading separator when non-empty."""
     if not condition:
         return ""
@@ -152,7 +152,7 @@ def _condition_to_str(condition: Sequence[ast.Literal]) -> str:
 
 
 def _guards_to_str(
-    left: ast.LeftGuard | None, inner: str, right: ast.RightGuard | None
+    left: ast.literals.LeftGuard | None, inner: str, right: ast.literals.RightGuard | None
 ) -> str:
     """Render a guarded aggregate given the rendered inner part."""
     parts: list[str] = []
@@ -164,7 +164,7 @@ def _guards_to_str(
     return "".join(parts)
 
 
-def _set_aggregate_to_str(head: ast.HeadSetAggregate) -> str | None:
+def _set_aggregate_to_str(head: ast.head.HeadSetAggregate) -> str | None:
     """Render a choice with assignment elements as ``{ f(t) := v: cond; … }``."""
     elements: list[str] = []
     has_assignment = False
@@ -172,7 +172,7 @@ def _set_aggregate_to_str(head: ast.HeadSetAggregate) -> str | None:
         literal = element.literal
         assignment = (
             _assignment_atom_to_str(literal.atom)
-            if isinstance(literal, ast.LiteralSymbolic)
+            if isinstance(literal, ast.literals.LiteralSymbolic)
             else None
         )
         if assignment is not None:
@@ -187,7 +187,7 @@ def _set_aggregate_to_str(head: ast.HeadSetAggregate) -> str | None:
 
 
 def _assignment_aggregate_to_str(
-    head: ast.HeadAggregate, left_term: ast.TermFunction
+    head: ast.head.HeadAggregate, left_term: ast.terms.TermFunction
 ) -> str:
     """Render an aggregate assignment head as ``f(t) := #agg{…}``."""
     name = left_term.name
@@ -207,15 +207,15 @@ def _assignment_aggregate_to_str(
     return f"{function} := {aggregate}{{{'; '.join(elements)}}}"
 
 
-def _head_aggregate_to_str(head: ast.HeadAggregate) -> str | None:
+def _head_aggregate_to_str(head: ast.head.HeadAggregate) -> str | None:
     """Render a head aggregate, restoring assignments in guards or elements."""
     left = head.left
     if (
         left is not None
-        and isinstance(left.term, ast.TermFunction)
+        and isinstance(left.term, ast.terms.TermFunction)
         and left.term.name.startswith(PARSER_PREFIX)
     ):
-        assert left.relation == ast.Relation.Equal
+        assert left.relation == ast.literals.Relation.Equal
         assert head.right is None
         return _assignment_aggregate_to_str(head, left.term)
 
@@ -225,7 +225,7 @@ def _head_aggregate_to_str(head: ast.HeadAggregate) -> str | None:
         literal = element.literal
         assignment = (
             _assignment_atom_to_str(literal.atom)
-            if isinstance(literal, ast.LiteralSymbolic)
+            if isinstance(literal, ast.literals.LiteralSymbolic)
             else None
         )
         if assignment is not None:
@@ -241,21 +241,21 @@ def _head_aggregate_to_str(head: ast.HeadAggregate) -> str | None:
     return _guards_to_str(head.left, inner, head.right)
 
 
-def _head_to_str(head: ast.HeadLiteral) -> str | None:
+def _head_to_str(head: ast.head.HeadLiteral) -> str | None:
     """Render a rule head in FASP syntax, or None if it has no F-encoding."""
-    if isinstance(head, ast.HeadSimpleLiteral):
+    if isinstance(head, ast.head.HeadSimpleLiteral):
         literal = head.literal
-        if not isinstance(literal, ast.LiteralSymbolic):
+        if not isinstance(literal, ast.literals.LiteralSymbolic):
             return None
         return _assignment_atom_to_str(literal.atom)
-    if isinstance(head, ast.HeadSetAggregate):
+    if isinstance(head, ast.head.HeadSetAggregate):
         return _set_aggregate_to_str(head)
-    if isinstance(head, ast.HeadAggregate):
+    if isinstance(head, ast.head.HeadAggregate):
         return _head_aggregate_to_str(head)
     return None
 
 
-def _ast_to_str(statement: ast.Statement) -> str:
+def _ast_to_str(statement: ast.statements.Statement) -> str:
     """
     Render an as-parsed statement in FASP syntax.
 
@@ -263,12 +263,12 @@ def _ast_to_str(statement: ast.Statement) -> str:
     head-aggregate guards, ``#show Ff/(n+1).`` signatures) are printed back
     in ``:=``/``#showf`` syntax; all other statements are printed as-is.
     """
-    if isinstance(statement, ast.StatementShowSignature):
+    if isinstance(statement, ast.statements.StatementShowSignature):
         if statement.name.startswith(PARSER_PREFIX):
             name = statement.name[len(PARSER_PREFIX) :]
             return f"#showf {name}/{statement.arity - 1}."
         return str(statement)
-    if not isinstance(statement, ast.StatementRule):
+    if not isinstance(statement, ast.statements.StatementRule):
         return str(statement)
     head = _head_to_str(statement.head)
     if head is None:

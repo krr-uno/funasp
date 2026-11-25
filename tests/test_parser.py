@@ -39,10 +39,10 @@ class TestParseAssignment2(unittest.TestCase):
         self.messages = []
         self.lib = Library(logger=lambda t, msg: self.messages.append((t, msg)))
 
-    def parse(self, code: str) -> list[ast.Statement]:
+    def parse(self, code: str) -> list[ast.statements.Statement]:
         """Parse code with the new parser, dropping the leading `#program base.`."""
         statements = [s.original for s in parse_string(self.lib, code)]
-        if statements and isinstance(statements[0], ast.StatementProgram):
+        if statements and isinstance(statements[0], ast.statements.StatementProgram):
             statements = statements[1:]
         return statements
 
@@ -50,7 +50,7 @@ class TestParseAssignment2(unittest.TestCase):
         """Assert that parsing yields the expected desugared statements."""
         rules = self.parse(code)
         for rule in rules:
-            self.assertIsInstance(rule, ast.Statement)
+            self.assertIsInstance(rule, ast.statements.Statement)
         lines = [sl for l in expected.strip().splitlines() if (sl := l.strip())]
         self.assertEqual(list(map(str, rules)), lines)
 
@@ -68,12 +68,12 @@ class TestParseAssignment2(unittest.TestCase):
         self.assertEqual(len(rules), 1)
         rule = rules[0]
         self.assertEqual(str(rule), "Fa(1).")
-        self.assertIsInstance(rule, ast.StatementRule)
+        self.assertIsInstance(rule, ast.statements.StatementRule)
         self.assertEqual(str(rule.head), "Fa(1)")
-        self.assertIsInstance(rule.head, ast.HeadSimpleLiteral)
+        self.assertIsInstance(rule.head, ast.head.HeadSimpleLiteral)
         literal = rule.head.literal
-        self.assertIsInstance(literal, ast.LiteralSymbolic)
-        self.assertIsInstance(literal.atom, ast.TermFunction)
+        self.assertIsInstance(literal, ast.literals.LiteralSymbolic)
+        self.assertIsInstance(literal.atom, ast.terms.TermFunction)
         self.assertEqual(literal.atom.name, "Fa")
         self.assertEqual([str(arg) for arg in literal.atom.pool], ["1"])
 
@@ -87,21 +87,21 @@ class TestParseAssignment2(unittest.TestCase):
         self.assertEqual(len(rules), 2)
         rule = rules[0]
         self.assertEqual(str(rule), "Fa(1) :- b11; b12.")
-        self.assertIsInstance(rule, ast.StatementRule)
+        self.assertIsInstance(rule, ast.statements.StatementRule)
         self.assertEqual(str(rule.head), "Fa(1)")
-        self.assertIsInstance(rule.head, ast.HeadSimpleLiteral)
+        self.assertIsInstance(rule.head, ast.head.HeadSimpleLiteral)
         self.assertEqual(rule.head.literal.atom.name, "Fa")
         self.assertEqual([str(arg) for arg in rule.head.literal.atom.pool], ["1"])
         rule = rules[1]
         self.assertEqual(str(rule), "Fb(X,a+X) :- b21(X); b22(X).")
-        self.assertIsInstance(rule, ast.StatementRule)
+        self.assertIsInstance(rule, ast.statements.StatementRule)
         self.assertEqual(str(rule.head), "Fb(X,a+X)")
-        self.assertIsInstance(rule.head, ast.HeadSimpleLiteral)
+        self.assertIsInstance(rule.head, ast.head.HeadSimpleLiteral)
         self.assertEqual(rule.head.literal.atom.name, "Fb")
         # The original arguments come first, the assigned value is last.
         arguments = rule.head.literal.atom.pool[0].arguments
         self.assertEqual([str(arg) for arg in arguments], ["X", "a+X"])
-        self.assertIsInstance(arguments[1], ast.TermBinaryOperation)
+        self.assertIsInstance(arguments[1], ast.terms.TermBinaryOperation)
 
     def test_parse_simple_assignments_with_clingo(self):
         """Test parse simple assignments mixed with plain clingo rules."""
@@ -125,7 +125,7 @@ class TestParseAssignment2(unittest.TestCase):
                 "t(1).",
             ],
         )
-        self.assertTrue(all(isinstance(r, ast.StatementRule) for r in rules))
+        self.assertTrue(all(isinstance(r, ast.statements.StatementRule) for r in rules))
         # Plain clingo rules are unchanged (no F prefix).
         for index, name in ((0, "p"), (2, "r"), (4, "t")):
             self.assertEqual(rules[index].head.literal.atom.name, name)
@@ -192,15 +192,15 @@ class TestParseAssignment2(unittest.TestCase):
         )
         rules = self.parse("a := #sum{X: p(X)} :- b.")
         rule = rules[0]
-        self.assertIsInstance(rule, ast.StatementRule)
+        self.assertIsInstance(rule, ast.statements.StatementRule)
         head = rule.head
-        self.assertIsInstance(head, ast.HeadAggregate)
-        self.assertIsInstance(head.left, ast.LeftGuard)
-        self.assertIsInstance(head.left.term, ast.TermFunction)
+        self.assertIsInstance(head, ast.head.HeadAggregate)
+        self.assertIsInstance(head.left, ast.literals.LeftGuard)
+        self.assertIsInstance(head.left.term, ast.terms.TermFunction)
         self.assertEqual(str(head.left.term), "Fa")
-        self.assertEqual(head.left.relation, ast.Relation.Equal)
+        self.assertEqual(head.left.relation, ast.literals.Relation.Equal)
         self.assertIsNone(head.right)
-        self.assertEqual(head.function, ast.AggregateFunction.Sum)
+        self.assertEqual(head.function, ast.aggregates.AggregateFunction.Sum)
 
     def test_assignment_choice(self):
         """Test assignment choice.
@@ -229,11 +229,11 @@ class TestParseAssignment2(unittest.TestCase):
         )
         rules = self.parse("{ a := 1 } :- b.")
         rule = rules[0]
-        self.assertIsInstance(rule, ast.StatementRule)
-        self.assertIsInstance(rule.head, ast.HeadSetAggregate)
+        self.assertIsInstance(rule, ast.statements.StatementRule)
+        self.assertIsInstance(rule.head, ast.head.HeadSetAggregate)
         elements = rule.head.elements
         self.assertEqual(len(elements), 1)
-        self.assertIsInstance(elements[0], ast.SetAggregateElement)
+        self.assertIsInstance(elements[0], ast.aggregates.SetAggregateElement)
         self.assertEqual(str(elements[0]), "Fa(1)")
 
     def test_some_assignment(self):
@@ -248,11 +248,11 @@ class TestParseAssignment2(unittest.TestCase):
         )
         rules = self.parse("color(X) := #some{r;g;b} :- country(X).")
         rule = rules[0]
-        self.assertIsInstance(rule, ast.StatementRule)
+        self.assertIsInstance(rule, ast.statements.StatementRule)
         head = rule.head
-        self.assertIsInstance(head, ast.HeadAggregate)
+        self.assertIsInstance(head, ast.head.HeadAggregate)
         self.assertEqual(str(head.left.term), "FScolor(X)")
-        self.assertEqual(head.left.relation, ast.Relation.Equal)
+        self.assertEqual(head.left.relation, ast.literals.Relation.Equal)
 
     def test_parse_order(self):
         """Test that statement order is preserved for mixed programs.
@@ -379,7 +379,7 @@ class TestParseAssignment2(unittest.TestCase):
                            """)
         self.assertEqual(len(rules), 1)
         rule = rules[0]
-        self.assertIsInstance(rule, ast.StatementShowSignature)
+        self.assertIsInstance(rule, ast.statements.StatementShowSignature)
         self.assertEqual(str(rule), "#show Fp/2. [true]")
         self.assertEqual(rule.name, "Fp")
         self.assertEqual(rule.arity, 2)

@@ -49,20 +49,20 @@ class _VariableCollector:
 
     def _collect_vars(self, node: AST) -> None:
         """Recursively collect variables from the given AST subtree."""
-        if isinstance(node, ast.TermVariable):
+        if isinstance(node, ast.terms.TermVariable):
             self.used.add(node.name)
             return
-        if isinstance(node, ast.TermSymbolic):
+        if isinstance(node, ast.terms.TermSymbolic):
             return
         node.visit(self._collect_vars)
 
 
-def _signatures_from_literal(prefix: str, literal: ast.Literal) -> set[SymbolSignature]:
+def _signatures_from_literal(prefix: str, literal: ast.literals.Literal) -> set[SymbolSignature]:
     """Collect the signature declared by a prefixed head atom, if any."""
-    if not isinstance(literal, ast.LiteralSymbolic):
+    if not isinstance(literal, ast.literals.LiteralSymbolic):
         return set()
     atom = literal.atom
-    if not isinstance(atom, ast.TermFunction) or not atom.name.startswith(prefix):
+    if not isinstance(atom, ast.terms.TermFunction) or not atom.name.startswith(prefix):
         return set()
     name = atom.name[len(prefix) :]
     return {
@@ -71,19 +71,19 @@ def _signatures_from_literal(prefix: str, literal: ast.Literal) -> set[SymbolSig
 
 
 def collect_intensional_function_signatures(
-    context: RewriteContext, statement: ast.Statement
+    context: RewriteContext, statement: ast.statements.Statement
 ) -> set[SymbolSignature]:
     """
     Collect the intensional function signatures declared by a statement head.
     """
-    if not isinstance(statement, ast.StatementRule):
+    if not isinstance(statement, ast.statements.StatementRule):
         return set()
     prefix = PARSER_PREFIX
     head = statement.head
     signatures: set[SymbolSignature] = set()
-    if isinstance(head, ast.HeadSimpleLiteral):
+    if isinstance(head, ast.head.HeadSimpleLiteral):
         signatures |= _signatures_from_literal(prefix, head.literal)
-    elif isinstance(head, ast.HeadSetAggregate | ast.HeadAggregate):
+    elif isinstance(head, ast.head.HeadSetAggregate | ast.head.HeadAggregate):
         for element in head.elements:
             signatures |= _signatures_from_literal(prefix, element.literal)
     return signatures
