@@ -105,5 +105,5 @@ class Library:
     def __exit__(
         self, exc_type: typing.Any, exc_value: typing.Any, traceback: typing.Any
     ) -> bool:
-        """Exit the managed context by delegating to the underlying clingo library."""
-        return self.library.__exit__(exc_type, exc_value, traceback)
+        """Exit the managed context; clingo's Library needs no explicit close."""
+        return False
